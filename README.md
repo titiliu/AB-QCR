@@ -9,12 +9,16 @@ Companion code for *Structured anchor–bridge recalibration of photovoltaic pow
 Use Python 3.11 or later. The portable float64 implementation uses NumPy and SciPy on CPU.
 
 ```bash
-python -m pip install -c requirements-tested.txt .
+python -m pip install .
 python examples/run_example.py
 python -m unittest discover -s tests -v
 ```
 
-The example generates forecasts in memory, selects a CAL layout with a small update budget, and checks prediction and model reload.
+The example generates forecasts in memory, selects a CAL layout with a small update budget, and checks prediction and model reload. The dependency versions used with Python 3.14 are listed in [requirements-tested.txt](requirements-tested.txt).
+
+## Study data and reproducibility
+
+The [raw-data release](https://github.com/titiliu/AB-QCR/releases/tag/raw-data-v1) contains the original SMARD Germany data for 2020–2023 and NIST Ground Mount data for 2015–2018. See the [reproduction guide](REPRODUCIBILITY.md) for archive checks, preprocessing, the upstream prediction requirements, and the study's CAL splits and final AB-QCR settings.
 
 ## Develop and fit within CAL
 
@@ -24,7 +28,7 @@ Provide per-unit upstream forecasts as an `(n, 99)` array in q01–q99 order, wi
 from abqcr import CALSplits, fit_cal, project_quantiles
 
 splits = CALSplits(train, stop, select, warm_fit, warm_dev, cold_fit)
-comparators = {"MONOTONE": project_quantiles(q_cal[select]), **other_select_curves}
+comparators = {**other_select_curves, "MONOTONE": project_quantiles(q_cal[select])}
 model, development = fit_cal(q_cal, lead_minutes, y_cal, daylight, splits, comparators)
 issued = model.predict(q_future, future_lead_minutes)
 model.save("fitted.npz")
@@ -37,7 +41,7 @@ model.save("fitted.npz")
 3. Score the fixed three-anchor, fixed five-anchor, and data-driven five-anchor candidates on the common SELECT records. For each metric, rank each layout as one plus the number of comparators with a strictly lower score. Use the same comparators for every layout. Choose the layout with the lowest mean rank across QS, CRPS, CE, and MAE. Lower QS breaks a mean-rank tie. Exact remaining ties follow the listed layout order.
 4. Refit the selected configuration on full CAL. Recompute the adopted pilot positions for a data-driven layout and retain the checkpoint with the lowest training objective. Use the fitted model to issue forecasts for the evaluation period.
 
-Set `rungs` and `checkpoint_updates` to control the portable solver's update budgets. The example shows a short run. `development` contains the selected layout and its development scores.
+Set `rungs` and `policy_updates` to control the portable solver's update budgets. Use `checkpoint_updates` to set the interior checkpoint schedule. `development` contains the selected layout, development scores, and full CAL fit information.
 
 ## Fit a specified layout from CSV
 
@@ -57,4 +61,8 @@ abqcr score --predictions calibrated.csv --observations observations.csv
 
 Use unique record IDs. Scoring aligns observations by ID and uses the daylight mask. The JSON output contains QS, CRPS, CE, MAE, and the eligible record count. QS, CRPS, and MAE use p.u. CE uses percentage points.
 
-See [CITATION.cff](CITATION.cff) for software citation information.
+## License and citation
+
+The AB-QCR source code and repository documentation are available under the [MIT License](LICENSE). The original data retain their source terms. SMARD data are attributed to Bundesnetzagentur | SMARD.de under [CC BY 4.0](https://www.smard.de/en/datennutzung). The NIST archives are governed by the [NIST data license](https://www.nist.gov/open/license).
+
+Use [CITATION.cff](CITATION.cff) to cite the software. Cite the original providers when using the data.
