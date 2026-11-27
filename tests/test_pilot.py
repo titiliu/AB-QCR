@@ -4,7 +4,6 @@ import numpy as np
 from scipy.optimize import linprog
 
 from abqcr.pilot import (
-    LAYOUT_METRICS,
     POLICIES,
     PilotResult,
     fit_pilot,
@@ -54,7 +53,7 @@ class PilotTests(unittest.TestCase):
             "P01": (1, 10, 50, 76, 99),
             "P11": anchors,
         })
-        zero = fit_pilot(np.zeros((2, 99)), [0, 0], [720, 735])
+        zero = PilotResult(np.zeros(99), np.ones(99), np.zeros(99), np.zeros((99, 99)))
         self.assertEqual(propose_layouts(zero).anchors, (1, 8, 50, 57, 99))
 
     def test_policy_selection_normalizes_by_window_and_breaks_ties(self):
@@ -68,14 +67,35 @@ class PilotTests(unittest.TestCase):
         self.assertEqual(result.scores["P01"], result.scores["P10"])
         self.assertEqual(result.scores["P11"], result.scores["P10"])
 
+    def test_layout_uses_mean_of_four_ranks_before_qs(self):
+        comparators = {
+            "peer1": {"QS": 0.3, "CRPS": 0.3, "CE": 3, "MAE": 0.3},
+            "peer2": {"QS": 0.4, "CRPS": 0.4, "CE": 4, "MAE": 0.4},
+        }
+        candidates = {
+            "anchor3": {"QS": 0.2, "CRPS": 0.2, "CE": 2, "MAE": 0.35},
+            "fixed5": {"QS": 0.15, "CRPS": 0.35, "CE": 2, "MAE": 0.35},
+            "dd5": {"QS": 0.5, "CRPS": 0.5, "CE": 5, "MAE": 0.5},
+        }
+        result = select_layout(candidates, comparators)
+        self.assertEqual(result.layout, "anchor3")
+        self.assertEqual(result.denominator, 3)
+        self.assertEqual(result.ranks, {
+            "anchor3": {"QS": 1, "CRPS": 1, "CE": 1, "MAE": 2},
+            "fixed5": {"QS": 1, "CRPS": 2, "CE": 1, "MAE": 2},
+            "dd5": {"QS": 3, "CRPS": 3, "CE": 3, "MAE": 3},
+        })
+        self.assertEqual(result.mean_ranks, {"anchor3": 1.25, "fixed5": 1.5, "dd5": 3.0})
+
     def test_layout_rank_preserves_unrounded_scores_and_ignores_other_candidates(self):
-        peer = dict(zip(LAYOUT_METRICS, ("1.0000000000000000002", "2", "3", "4", "5")))
+        peer = {"QS": "1.0000000000000000002", "CRPS": "2", "CE": "3", "MAE": "4"}
         left = {**peer, "QS": "1.0000000000000000001", "CRPS": "2.1"}
         right = {**peer, "QS": "1.0000000000000000003", "CRPS": "1.9"}
         result = select_layout({"left": left, "right": right}, {"static": peer})
         self.assertEqual(result.denominator, 2)
-        self.assertEqual(result.ranks["left"], dict(zip(LAYOUT_METRICS, (1, 2, 1, 1, 1))))
-        self.assertEqual(result.ranks["right"], dict(zip(LAYOUT_METRICS, (2, 1, 1, 1, 1))))
+        self.assertEqual(result.ranks["left"], {"QS": 1, "CRPS": 2, "CE": 1, "MAE": 1})
+        self.assertEqual(result.ranks["right"], {"QS": 2, "CRPS": 1, "CE": 1, "MAE": 1})
+        self.assertEqual(result.mean_ranks, {"left": 1.25, "right": 1.25})
         self.assertEqual(result.layout, "left")
         tied = select_layout({"left": left, "duplicate": left}, {"static": peer})
         self.assertIsNone(tied.layout)

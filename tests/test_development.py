@@ -38,7 +38,7 @@ class CALDevelopmentTests(unittest.TestCase):
         }
         return fit_cal(**(options | overrides))
 
-    def test_search_continues_trajectories_and_refits_the_selected_dd5_policy(self):
+    def test_search_continues_trajectories_and_refits_the_selected_layout(self):
         target_time = np.datetime64("2020-01-01T00:00") + np.arange(32) * np.timedelta64(2, "D")
         leads, observations = self.lead, self.observed
         model, report = self.fit(
@@ -49,7 +49,25 @@ class CALDevelopmentTests(unittest.TestCase):
         json.dumps(report, allow_nan=False)
         self.assertTrue(report["calendar_boundaries_checked"])
         self.assertEqual(report["rank_denominator"], 2)
-        self.assertEqual(report["selected_layout"], "dd5")
+        comparators = report["comparator_scores"].values()
+        metrics = ("QS", "CRPS", "CE", "MAE")
+        self.assertTrue(all(set(peer) == {*metrics, "records"} for peer in comparators))
+        expected_ranks = {}
+        for name, branch in report["development"].items():
+            scores = branch["select_scores"]
+            self.assertEqual(set(scores), {*metrics, "records"})
+            expected_ranks[name] = {
+                metric: 1 + sum(peer[metric] < scores[metric] for peer in comparators)
+                for metric in metrics
+            }
+        self.assertEqual(report["layout_ranks"], expected_ranks)
+        expected_means = {name: sum(ranks.values()) / 4 for name, ranks in expected_ranks.items()}
+        self.assertEqual(report["layout_mean_ranks"], expected_means)
+        layout_order = ("anchor3", "fixed5", "dd5")
+        selected = min(layout_order, key=lambda name: (
+            expected_means[name], report["development"][name]["select_scores"]["QS"],
+        ))
+        self.assertEqual(report["selected_layout"], selected)
         train, stop, select = self.splits.train, self.splits.stop, self.splits.select
         for branch in report["development"].values():
             search = branch["search"]
@@ -83,9 +101,13 @@ class CALDevelopmentTests(unittest.TestCase):
         self.assertEqual(dd5["policy"], policy.policy)
         self.assertEqual(dd5["policy"], "P10")
         self.assertEqual(dd5["target_updates"], policy.target_updates)
-        proposal = propose_layouts(fit_pilot(project_quantiles(self.raw), observations, leads))
-        self.assertEqual(model.anchors, policy_layouts(proposal)[policy.policy])
-        self.assertNotEqual(dd5["cold"][policy.policy]["anchors"], model.anchors)
+        if selected == "dd5":
+            proposal = propose_layouts(fit_pilot(project_quantiles(self.raw), observations, leads))
+            expected_anchors = policy_layouts(proposal)[policy.policy]
+            self.assertNotEqual(dd5["cold"][policy.policy]["anchors"], expected_anchors)
+        else:
+            expected_anchors = report["development"][selected]["search"]["anchors"]
+        self.assertEqual(model.anchors, expected_anchors)
         cold_fit = self.splits.cold_fit
         cold_checkpoint = ABQCR.fit(
             self.raw[cold_fit], leads[cold_fit], observations[cold_fit],
@@ -100,7 +122,7 @@ class CALDevelopmentTests(unittest.TestCase):
             ),
         )
         target = report["full_cal"]["target_updates"]
-        self.assertEqual(policy.target_updates, target)
+        self.assertEqual(report["development"][selected]["target_updates"], target)
         refit = ABQCR.fit(
             self.raw, leads, observations, anchors=model.anchors,
             regularization=model.regularization, updates=target,

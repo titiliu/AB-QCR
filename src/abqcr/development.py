@@ -389,10 +389,12 @@ def fit_cal(
     DEV patience is evaluated every 1024 updates after update 4096.
 
     The chosen DD5 policy's cold checkpoint supplies its development SELECT
-    forecasts. If layouts tie on mean rank and QS, the declared order
-    anchor3, fixed5, dd5 resolves the tie. The report records all ties and the
-    selected settings. The final model saves the full-CAL checkpoint with
-    minimum prepublication training objective, including initialization.
+    forecasts. Select the layout with the lowest mean rank across QS, CRPS,
+    CE, and MAE against the common SELECT comparators. Lower QS breaks a
+    mean-rank tie, followed by the declared order anchor3, fixed5, dd5.
+    The report records all ties and the selected settings. The final model
+    saves the full-CAL checkpoint with minimum prepublication training
+    objective, including initialization.
     """
     quantiles = quantile_matrix(quantiles)
     n_records = len(quantiles)

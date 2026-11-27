@@ -12,7 +12,7 @@ _CRPS_COEFFICIENTS = 2 * np.arange(1, 100) - 100
 def score(
     quantiles: ArrayLike, observed_pu: ArrayLike, *, daylight: ArrayLike | None = None
 ) -> dict[str, float | int]:
-    """Return QS, CRPS, CE (percentage points), MAE, QS_L and the record count.
+    """Return QS, CRPS, CE (percentage points), MAE, and the record count.
 
     The power-based scores use per-unit values. Provide the verified daylight
     mask for the paper's evaluation. With no mask, score all supplied rows.
@@ -50,6 +50,5 @@ def score(
         "CRPS": float(crps),
         "CE": float(100 * coverage_error.mean()),
         "MAE": float(np.abs(residual[:, 49]).mean()),
-        "QS_L": float(quantile_losses[:10].mean()),
         "records": len(values),
     }

@@ -2,7 +2,7 @@ cff-version: 1.2.0
 message: Please cite this software and the accompanying AB-QCR paper when using the code.
 title: AB-QCR
 type: software
-version: 1.1.0
+version: 1.1.1
 authors:
   - family-names: Chen
     given-names: Tie
