@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,6 +8,8 @@ version = "1.1.1"
 description = "Anchor–Bridge Quantile-Curve Recalibration for photovoltaic power forecasts"
 readme = "README.md"
 requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
 dependencies = ["numpy>=1.26,<3", "scipy>=1.11,<2"]
 keywords = ["probabilistic forecasting", "photovoltaics", "quantile calibration"]
 
