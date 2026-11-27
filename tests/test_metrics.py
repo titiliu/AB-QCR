@@ -1,4 +1,4 @@
-"""Check the five scoring formulas and daylight selection."""
+"""Check the four scoring formulas and daylight selection."""
 
 import unittest
 
@@ -8,12 +8,13 @@ from abqcr import score
 
 
 class TestScores(unittest.TestCase):
-    def test_all_five_metrics_against_direct_formulas(self):
+    def test_all_four_metrics_against_direct_formulas(self):
         first = np.linspace(0.1, 0.9, 99)
         second = np.repeat(0.7, 99)
         forecasts = np.stack((first, second, np.repeat(0.3, 99)))
         obs = np.array([0.5, 0.7, 0.8])
         got = score(forecasts, obs, daylight=np.array([True, True, False]))
+        self.assertEqual(set(got), {"QS", "CRPS", "CE", "MAE", "records"})
         q, y = forecasts[:2], obs[:2, None]
         tau = np.arange(1, 100) / 100
         residual = y - q
@@ -25,7 +26,6 @@ class TestScores(unittest.TestCase):
         self.assertAlmostEqual(got["CRPS"], crps)
         self.assertAlmostEqual(got["CE"], 100 * np.abs(projected_coverage - tau).mean())
         self.assertAlmostEqual(got["MAE"], np.abs(residual[:, 49]).mean())
-        self.assertAlmostEqual(got["QS_L"], pinball[:, :10].mean())
         self.assertEqual(got["records"], 2)
 
     def test_rejects_crossing_issued_curves(self):
