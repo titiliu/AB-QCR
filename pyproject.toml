@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "abqcr"
+version = "1.1.0"
+description = "Anchor–Bridge Quantile-Curve Recalibration for photovoltaic power forecasts"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["numpy>=1.26,<3", "scipy>=1.11,<2"]
+keywords = ["probabilistic forecasting", "photovoltaics", "quantile calibration"]
+
+[project.scripts]
+abqcr = "abqcr.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

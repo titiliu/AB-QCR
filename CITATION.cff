@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: Please cite this software and the accompanying AB-QCR paper when using the code.
+title: AB-QCR
+type: software
+version: 1.1.0
+authors:
+  - family-names: Chen
+    given-names: Tie
+  - family-names: Liu
+    given-names: Dekai
+  - family-names: Yang
+    given-names: Yibo
+  - family-names: Tan
+    given-names: Ruichen
+  - family-names: Sun
+    given-names: Zhaoxin
