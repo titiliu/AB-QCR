@@ -34,7 +34,7 @@ model.save("fitted.npz")
 
 1. Fit the coefficient candidates on TRAIN. Use daytime QS on STOP to retain eligible checkpoints and screen the regularization grid. Compare the retained configurations on SELECT.
 2. For five data-driven anchors, propose interior positions separately in the warm and cold FIT windows. Use the two relative DEV scores to choose which sides to adopt.
-3. Score the fixed three-anchor, fixed five-anchor, and data-driven five-anchor candidates on the common SELECT records. Compare the mean rank across QS, CRPS, CE, MAE, and lower-tail QS against the same comparators, with QS as the first tie-breaker. Exact remaining ties follow the listed layout order.
+3. Score the fixed three-anchor, fixed five-anchor, and data-driven five-anchor candidates on the common SELECT records. For each metric, rank each layout as one plus the number of comparators with a strictly lower score. Use the same comparators for every layout. Choose the layout with the lowest mean rank across QS, CRPS, CE, and MAE. Lower QS breaks a mean-rank tie. Exact remaining ties follow the listed layout order.
 4. Refit the selected configuration on full CAL. Recompute the adopted pilot positions for a data-driven layout and retain the checkpoint with the lowest training objective. Use the fitted model to issue forecasts for the evaluation period.
 
 Set `rungs` and `checkpoint_updates` to control the portable solver's update budgets. The example shows a short run. `development` contains the selected layout and its development scores.
@@ -55,6 +55,6 @@ abqcr score --predictions calibrated.csv --observations observations.csv
 | Forecasts | `record_id`, `lead_time_min`, `q01` through `q99` |
 | Observations for scoring | `record_id`, `observed_pu`, `daylight` |
 
-Use unique record IDs. Scoring aligns observations by ID and uses the daylight mask. QS, CRPS, MAE, and lower-tail QS use p.u. CE uses percentage points.
+Use unique record IDs. Scoring aligns observations by ID and uses the daylight mask. The JSON output contains QS, CRPS, CE, MAE, and the eligible record count. QS, CRPS, and MAE use p.u. CE uses percentage points.
 
 See [CITATION.cff](CITATION.cff) for software citation information.
