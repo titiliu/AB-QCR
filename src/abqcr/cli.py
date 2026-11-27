@@ -78,7 +78,11 @@ def main(argv: list[str] | None = None) -> int:
     predict.add_argument("--output", type=Path, required=True, help="Issued forecast CSV")
     predict.set_defaults(run=_predict)
 
-    evaluate = commands.add_parser("score", help="Score issued curves against aligned observations")
+    evaluate = commands.add_parser(
+        "score",
+        help="Report QS, CRPS, CE, and MAE for issued curves",
+        description="Report QS, CRPS, CE, MAE, and the eligible record count.",
+    )
     evaluate.add_argument("--predictions", type=Path, required=True)
     evaluate.add_argument("--observations", type=Path, required=True)
     evaluate.add_argument("--all-rows", action="store_true", help="Evaluate all rows instead of daylight")

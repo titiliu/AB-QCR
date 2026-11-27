@@ -18,7 +18,7 @@ FIXED_FIVE_ANCHORS = (1, 10, 50, 90, 99)
 LEFT_CANDIDATES = tuple(range(8, 44))
 RIGHT_CANDIDATES = tuple(range(57, 93))
 POLICIES = ("P00", "P10", "P01", "P11")
-LAYOUT_METRICS = ("QS", "CRPS", "CE", "MAE", "QS_L")
+LAYOUT_METRICS = ("QS", "CRPS", "CE", "MAE")
 
 _LP_OPTIONS = {
     "presolve": True,
@@ -250,9 +250,9 @@ def _metric_values(scores: Mapping[str, float | str | Decimal]) -> tuple[Decimal
     try:
         values = tuple(Decimal(str(scores[metric])) for metric in LAYOUT_METRICS)
     except (KeyError, InvalidOperation, ValueError) as exc:
-        raise ValueError("Supply unrounded QS, CRPS, CE, MAE, and QS_L") from exc
+        raise ValueError("Supply unrounded QS, CRPS, CE, and MAE") from exc
     if not all(value.is_finite() for value in values):
-        raise ValueError("Layout comparison requires finite scores for all five metrics")
+        raise ValueError("Layout comparison requires finite scores for all four metrics")
     return values
 
 
@@ -263,7 +263,7 @@ def select_layout(
     """Compare each layout independently against the same static comparators.
 
     Supply unrounded scores on the same development validation rows and units.
-    Metric ranks count only strictly better comparators. The five ranks receive
+    Metric ranks count only strictly better comparators. The four ranks receive
     equal weight and lower QS breaks mean-rank ties. If both criteria still tie,
     `layout` is None and `ties` lists the tied names.
     """
